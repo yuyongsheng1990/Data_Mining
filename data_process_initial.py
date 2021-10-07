@@ -81,41 +81,41 @@ except MySQLDB.err.ProgrammingError as e:
     sys.exit()
 
 
-test_record_result =pd.merge(test_record_index,test_result,on=['TEST_RECORD_ID'],how='inner')
-test_record_result = test_record_result.reset_index()
-del test_record_result['index']
+test_index_result =pd.merge(test_record_index,test_result,on=['TEST_RECORD_ID'],how='inner')
+test_index_result = test_index_result.reset_index()
+del test_index_result['index']
 
 # 检验结果按照病人id排序
-test_record_result=test_record_result.sort_values(['PATIENT_ID'],ascending=1)
-print(test_record_result.shape)
+test_index_result=test_index_result.sort_values(['PATIENT_ID'],ascending=1)
+print(test_index_result.shape)
 
 print(len(np.unique(drug_record_tcms['PATIENT_ID'])))
 print(len(np.unique(drug_record_other['PATIENT_ID'])))
 print(len(np.unique(surgical_record['PATIENT_ID'])))
-print(len(np.unique(test_record_result['PATIENT_ID'])))
+print(len(np.unique(test_index_result['PATIENT_ID'])))
 print(len(np.unique(diagnose_record['PATIENT_ID'])))
 print(len(np.unique(base_gene_record['病人ID'])))
 
-print(test_record_result.shape)
+print(test_index_result.shape)
 
 # 从检验中提取他克莫司tdm检测结果
 print('----------------------从检验中提取他克莫司tdm检测结果--------------------------------')
-# test_record_result=test_record_result[test_record_result['PROJECT_NAME'].notnull()]
-# print(test_record_result.shape)
-test_record_result_tdm=test_record_result[test_record_result['PROJECT_NAME']=='他克莫司']
-test_record_result_tdm=test_record_result_tdm.reset_index()
-del test_record_result_tdm['index']
-print(test_record_result_tdm.shape)
+# test_index_result=test_index_result[test_index_result['PROJECT_NAME'].notnull()]
+# print(test_index_result.shape)
+test_index_result_tdm=test_index_result[test_index_result['PROJECT_NAME']=='他克莫司']
+test_index_result_tdm=test_index_result_tdm.reset_index()
+del test_index_result_tdm['index']
+print(test_index_result_tdm.shape)
 
 print(drug_record_tcms.columns)
 # print(len(drug_record_tcms.columns))
-print(test_record_result_tdm.columns)
-# print(len(test_record_result_tdm.columns))
+print(test_index_result_tdm.columns)
+# print(len(test_index_result_tdm.columns))
 
 
 # 合并他克莫司用药和tdm检测信息，将同一个病人的用药和tdm检测按时间排序，形成用药-tdm的时间序列
 print('----------------------合并他克莫司用药和tdm检测信息----------------------------------')
-tcms_tdm=pd.concat([drug_record_tcms.rename(columns={'START_DATETIME':'time'}),test_record_result_tdm.rename(columns={'COLLECT_TIME':'time'})],axis=0)
+tcms_tdm=pd.concat([drug_record_tcms.rename(columns={'START_DATETIME':'time'}),test_index_result_tdm.rename(columns={'COLLECT_TIME':'time'})],axis=0)
 print(tcms_tdm.columns)
 # print(len(tcms_tdm.columns))
 tcms_tdm = tcms_tdm[['PATIENT_ID','DRUG_NAME','DOSAGE','FREQUENCY','PROJECT_NAME','TEST_RESULT','time','END_DATETIME']]
@@ -645,10 +645,10 @@ print(tcms_tdm_initialCase_gene_1.shape)
 
 # 检验信息提取合并入初始方案中
 print('-----------------------检验信息提取合并入初始方案建模数据中--------------------------')
-print(test_record_result.columns)
+print(test_index_result.columns)
 ## 只提取初始方案中的病人检测结果信息
 initialCase_test_result=pd.merge(tcms_tdm_initialCase_1[['PATIENT_ID','服药开始时间', '服药结束时间', '肾移植手术时间','TDM检测时间']],\
-                       test_record_result,on=['PATIENT_ID'],how='left')
+                       test_index_result,on=['PATIENT_ID'],how='left')
 print(initialCase_test_result.shape)
 
 # 截取手术之后，第一次用药之前的检验信息
