@@ -127,7 +127,7 @@ def main():
 
     # Score the model on test data
     test_score = ml_predictor.score(test_x, test_x['日剂量'])
-
+    print(test_score)
     # auto_ml is specifically tuned for running in production
     # It can get predictions on an individual row (passed in as a dictionary)
     # A single prediction like this takes ~1 millisecond
@@ -158,6 +158,7 @@ def main():
 
     print(df_IMP.shape)
     print(df_IMP['糖皮质激素日剂量'].describe())
+    print(df_IMP[df_IMP['糖皮质激素日剂量']==500])
 
     df_IMP['CYP3A5'] = df_IMP['CYP3A5'].apply(lambda x: 'AA' if x == 0 else 'AG' if x == 1 else 'GG' if x == 2 else x)
     df_IMP['ABCB1'] = df_IMP['ABCB1'].apply(lambda x: 'CC' if x == 0 else 'CT' if x == 1 else 'TT' if x == 2 else x)
@@ -165,7 +166,7 @@ def main():
     print(np.unique(df_IMP['ABCB1'].astype('str')))
 
     ## 性别0是男，1是女
-    df_IMP[df_IMP['性别'] == 1]['身高'].describe()
+    print(df_IMP[df_IMP['性别'] == 1]['身高'].describe())
 
 
 
@@ -339,7 +340,7 @@ def main():
 
 
     ## 真实值和预测值对比折线图
-    print('----------------------真实值和预测值对比折线图--------------------------------')
+    print('----------------------测试集真实值和预测值对比折线图--------------------------------')
     test_x_1['日剂量预测值'] = predictions
     test_x_1 = test_x_1.sort_values(['日剂量'], ascending=1)
 
@@ -388,10 +389,11 @@ def main():
     plt.xlabel('Number of Events(unit)')
     plt.ylabel('Tac Daily Dose(mg)')
     # plt.show()
+    # 判断图片保存路径是否存在，否则创建
     jpg_path = project_path + "/jpg/他克莫司_箱线图（python导出）"
-    # 判断该路径是否存在，否则创建
     mkdir(jpg_path)
     plt.savefig(jpg_path + "/测试集折线图.jpg", dpi=300)
+    plt.clf()  # 删除前面所画的图
 
     '''缺少数据
     ## 重要性得分柱形图
