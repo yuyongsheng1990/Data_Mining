@@ -166,7 +166,7 @@ def main():
 
     print(tran_x)
     # 利用XGBoost模型计算各个变量的重要性得分并降序排序
-    imp_x = np.array(tran_x.iloc[:, 1:])
+    imp_x = tran_x.iloc[:, 1:]
     imp_y = np.array(tran_x['日剂量'])
     x_label = np.array(tran_x.columns)[1:]
 
@@ -194,6 +194,36 @@ def main():
     plt.savefig(jpg_path + "/重要性评分柱状图.jpg", dpi=300)
     plt.clf()  # 删除前面所画的图
 
+    # SHAP图
+    import shap
+
+    shap.initjs()  # notebook环境下，加载用于可视化的JS代码
+    import xgboost
+
+    feature_top10 = list(df_imp_temp['index'])[:10]
+    print(feature_top10)
+    tran_x_top10 = tran_x[feature_top10]
+    imp_x_top10 = tran_x_top10.iloc[:, 1:]
+    imp_x_top10 = imp_x_top10.reset_index()
+    del imp_x_top10['index']
+    imp_y_top10 = np.array(tran_x['日剂量'])
+    x_label_top10 = np.array(tran_x_top10.columns)[1:]
+    ''' 
+    model_xgb_top10 = XGBClassifier()
+    model_xgb_top10.fit(imp_x_top10, imp_y_top10)
+    explainer = shap.TreeExplainer(model_xgb_top10)
+    # 最新版本的shap对于LGBMClassifier得到的shap_values为两个数组的列表，即两个分类的结果，这里使用分类1的结果
+    shap_values = explainer.shap_values(tran_x_top10)
+    shap.summary_plot(shap_values, tran_x_top10, plot_type="bar")
+    '''
+    # 我们先训练好一个XGBoost model
+    model = xgboost.train({"learning_rate": 0.01}, xgboost.DMatrix(imp_x_top10, label=imp_y_top10), 100)
+
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(imp_x_top10)  # 传入特征矩阵X，计算SHAP值
+
+    # summarize the effects of all the features
+    shap.summary_plot(shap_values, imp_y_top10)
 
     # 重要变量数值离散化，分段
     print('-----------------------------重要变量数值离散化，分段----------------------------------')
