@@ -155,6 +155,7 @@ print(tcms_tdm_surgery.columns)
 
 # 截取肾移植手术后3个月内的他克莫司用药信息
 import datetime
+print(tcms_tdm_surgery['SURGERY_DATE'])
 tcms_tdm_surgery=tcms_tdm_surgery[(tcms_tdm_surgery['time']>=tcms_tdm_surgery['SURGERY_DATE']-datetime.timedelta(days=2))&(tcms_tdm_surgery['time']<=tcms_tdm_surgery['SURGERY_DATE']+datetime.timedelta(days=90))]
 tcms_tdm_surgery=tcms_tdm_surgery.reset_index()
 del tcms_tdm_surgery['index']

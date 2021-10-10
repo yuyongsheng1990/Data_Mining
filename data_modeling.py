@@ -15,6 +15,9 @@ from auto_ml import Predictor
 from auto_ml.utils import get_boston_dataset
 from auto_ml.utils_models import load_ml_model
 
+from sklearn.metrics import r2_score
+
+
 # Tell auto_ml which column is 'output'
 # Also note columns that aren't purely numerical
 # Examples include ['nlp', 'date', 'categorical', 'ignore']
@@ -127,7 +130,7 @@ def main():
 
     # Score the model on test data
     test_score = ml_predictor.score(test_x, test_x['日剂量'])
-    print(test_score)
+
     # auto_ml is specifically tuned for running in production
     # It can get predictions on an individual row (passed in as a dictionary)
     # A single prediction like this takes ~1 millisecond
@@ -144,10 +147,52 @@ def main():
     predictions = ml_predictor.predict(test_x)
     print(predictions)
 
-    predictions = trained_model.predict(test_x)
-    print(predictions)
+    # predictions = trained_model.predict(test_x)
+    # print(predictions)
 
     print(df.columns)
+
+    from pylab import mpl
+    from xgboost import XGBClassifier
+
+    mpl.rcParams['font.sans-serif'] = ['SimHei']  ##绘图显示中文
+    mpl.rcParams['axes.unicode_minus'] = False
+
+    from matplotlib import pyplot as plt
+    import matplotlib.ticker as ticker
+    from matplotlib import rc
+
+    rc('mathtext', default='regular')
+
+    print(tran_x)
+    # 利用XGBoost模型计算各个变量的重要性得分并降序排序
+    imp_x = np.array(tran_x.iloc[:, 1:])
+    imp_y = np.array(tran_x['日剂量'])
+    x_label = np.array(tran_x.columns)[1:]
+
+    model_xgb = XGBClassifier()
+    model_xgb.fit(imp_x, imp_y)
+    importance = model_xgb.feature_importances_
+    print(importance)
+    # print(type(importance))
+    # print(type(x_label))
+    # 重要性评分排序，创建dataframe对象
+    df_imp_temp = pd.DataFrame({'index':x_label, 'importance_score': importance})
+    df_imp_temp=df_imp_temp.sort_values(['importance_score'], ascending=False)
+    # print(df_imp_temp)
+    writer = pd.ExcelWriter(project_path + '/data/data_from_mysql/df_feature_重要性评分.xlsx')
+    df_imp_temp.to_excel(writer)
+    writer.save()
+
+    index = range(len(importance))
+    plt.bar(index, importance, width=0.7,color=(0.32941176470588235, 0.7294117647058823, 0.7490196078431373),tick_label=x_label)
+    plt.xticks(rotation=75)
+    # plt.show()
+    # 判断图片保存路径是否存在，否则创建
+    jpg_path = project_path + "/jpg/他克莫司_箱线图（python导出）"
+    mkdir(jpg_path)
+    plt.savefig(jpg_path + "/重要性评分柱状图.jpg", dpi=300)
+    plt.clf()  # 删除前面所画的图
 
 
     # 重要变量数值离散化，分段
@@ -334,8 +379,11 @@ def main():
     # A list of dictionaries
     # A single dictionary (optimized for speed in production evironments)
     predictions = ml_predictor.predict(test_x_1)
-
     print(predictions)
+
+    r2 = r2_score(test_x_1['日剂量'],predictions)
+    print('测试集r2:', r2)
+
     print(test_x_1.shape)
 
 
@@ -395,26 +443,29 @@ def main():
     plt.savefig(jpg_path + "/测试集折线图.jpg", dpi=300)
     plt.clf()  # 删除前面所画的图
 
-    '''缺少数据
+
+    '''
     ## 重要性得分柱形图
-    df_importance_21 = pd.read_excel(project_path + '/data/data_from_mysql/重要性得分.xlsx')
-    print(df_importance_21.columns)
-    print(df_importance_21)
-    
-    names = list(df_importance_21['Variable Name'])
+
+    # df_importance_21 = pd.read_excel(project_path + '/data/data_from_mysql/重要性得分.xlsx')
+    # print(df_importance_21.columns)
+    # print(df_importance_21)
+
+    # names = list(df_importance_21['Variable Name'])
+    names = tran_x.columns
     index = np.arange(len(names))
     plt.figure(figsize=(15, 8))
-    plt.bar(index, df_importance_21['Importance Sore'], width=0.7,
+    plt.bar(index, importance, width=0.7,
             color=(0.32941176470588235, 0.7294117647058823, 0.7490196078431373), tick_label=names)
     plt.xticks(rotation=75)
     plt.ylabel('Importance Score')
     plt.xlabel('Variable Name')
-    for a, b in zip(index, df_importance_21['Importance Sore']):
+    for a, b in zip(index, importance):
         plt.text(a, b + 0.002, '%.4f' % b, ha='center', va='bottom', fontsize=10)
     # plt.title('重要变量得分柱形图')
     plt.show()
     
-    
+   
     ##倾向性评分匹配后的数据集，生成箱线图
     df_ps_box = pd.read_excel(project_path + '/data/data_from_mysql/糖皮质激素日剂量12到25mg.xlsx')
     
@@ -478,23 +529,10 @@ def main():
     ml_predictor = Predictor(type_of_estimator='regressor', column_descriptions=column_descriptions)
     ml_predictor.train(tran_x_1, model_names=['XGBRegressor'])
 
-    # Score the model on test data
-    test_score = ml_predictor.score(df_val_1, df_val_1['日剂量'])
-
-    # auto_ml is specifically tuned for running in production
-    # It can get predictions on an individual row (passed in as a dictionary)
-    # A single prediction like this takes ~1 millisecond
-    # Here we will demonstrate saving the trained model, and loading it again
-
-    file_name = ml_predictor.save()
-    trained_model = load_ml_model(file_name)
-
-    # .predict and .predict_proba take in either:
-    # A pandas DataFrame
-
-    # A list of dictionaries
-    # A single dictionary (optimized for speed in production evironments)
     predictions = ml_predictor.predict(df_val_1)
+    r2 = r2_score(df_val_1['日剂量'],predictions)
+
+    print('验证集r2:', r2)
     print(predictions)
 
     ## 真实值和预测值对比折线图
